@@ -12,6 +12,7 @@
 #define CTRL_REG1 0x2a
 #define STATUS 0x00
 #define ACC_DATA_REGS 0x01
+#define HP_FILTER_CUTOFF 0x0f
 
 void setup();
 
@@ -28,8 +29,8 @@ int main(void){
     
     setup();
     I2C_Init();
-
-    I2C_WriteReg(ADDRESS, XYZ_DATA_CFG_REG, 0 );
+    I2C_WriteReg(ADDRESS, HP_FILTER_CUTOFF, 0);
+    I2C_WriteReg(ADDRESS, XYZ_DATA_CFG_REG, 0x10 );
     
 
 
@@ -61,7 +62,7 @@ int main(void){
             endCycle++;
         }
         // 500 in 20s
-        if(endCycle == 600) {
+        if(endCycle == 300) {
             isClicked = 0;
             endCycle = 0;
             if(((UART0->S1) & UART0_S1_TDRE_MASK)){
