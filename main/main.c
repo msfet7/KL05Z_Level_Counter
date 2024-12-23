@@ -14,15 +14,12 @@ int main(void){
     I2C_Init();
     I2C_WriteReg(ADDRESS, HP_FILTER_CUTOFF, 0x01);
     I2C_WriteReg(ADDRESS, XYZ_DATA_CFG_REG, 0x10 );
-    
-
-
     UART0->C2 |= UART0_C2_TE_MASK;
+
     while(TRUE){
         execute();
     }
-
-
+    
 }
 
 
