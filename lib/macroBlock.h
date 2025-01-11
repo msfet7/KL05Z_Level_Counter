@@ -10,5 +10,11 @@
 #define ACC_DATA_REGS 0x01
 #define HP_FILTER_CUTOFF 0x0f
 
+// tresholds
+#define ACTIVATION_TH -1.25
+#define UEXIT_TH -0.88
+#define DEXIT_TH -0.92
+#define ABSOLUTE_MAXIMUM_TH -0.6
+
 // for future (i guess)
 #define UNDER_TEST 1
