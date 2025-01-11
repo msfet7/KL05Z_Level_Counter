@@ -15,6 +15,7 @@ uint16_t endCycle = 0;
 
 uint8_t isDetected = 0;
 uint8_t isCatched = 0;
+uint8_t isReady = 0;
 
 //while(1){
 
@@ -79,14 +80,25 @@ void execute(){
         
         x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
 
-        if(x > EXIT_TH && isCatched == 0) isCatched = 1;
-        if(x < EXIT_TH && isCatched == 1){
+        // explenation in documentation (there isn't any for now XD)
+        if(x > DEXIT_TH && isReady == 0) isReady == 1;
+        if(x > UEXIT_TH && isCatched == 0 && isReady == 1) isCatched = 1;
+        if(x < UEXIT_TH && isCatched == 1){
             if(((UART0->S1) & UART0_S1_TDRE_MASK)){
             UART0->D = 'a';
+            }
 
-            isCatched = isDetected = 0;
+            isCatched = isDetected = isReady = 0;
             break;
+            
         }
+        if(x < DEXIT_TH && isReady == 1){
+            if(((UART0->S1) & UART0_S1_TDRE_MASK)){
+            UART0->D = 'b';
+            }
+            
+            isCatched = isDetected = isReady = 0;
+            break;
         }
     }
 }
