@@ -1,5 +1,7 @@
 #include "exec.h"
 
+//int main(){
+
 // data
 uint8_t isClicked = 0;
 uint8_t status;
@@ -10,6 +12,11 @@ float z = 0;
 char data[45] = {0x20};
 uint8_t length = 0;
 uint16_t endCycle = 0;
+
+uint8_t isDetected = 0;
+uint8_t isCatched = 0;
+
+//while(1){
 
 //function declaration for test
 #if UNDER_TEST == 1
@@ -36,11 +43,11 @@ void execute(){
             //DELAY(35);
             UART0->D = data[i];     
         }
-        DELAY(100)
+        DELAY(50)
         endCycle++;
     }
     // 500 in 20s
-    if(endCycle == 600) {
+    if(endCycle == 1200) {
         isClicked = 0;
         endCycle = 0;
         if(((UART0->S1) & UART0_S1_TDRE_MASK)){
@@ -54,6 +61,36 @@ void execute(){
 // function declaration for use
 #else
 void execute(){
+    I2C_ReadReg(ADDRESS, STATUS_REG, &status);
+    if(status & (1 << 3)){
+        I2C_ReadRegBlock(ADDRESS, ACC_DATA_REGS, 6, accVal);
+    } 
+       
+    x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
+    // interupt simulation
+    if(x < ACTIVATION_TH && isDetected == 0) isDetected = 1;
+
+    // after "interupt" execution
+    while(isDetected){
+        I2C_ReadReg(ADDRESS, STATUS_REG, &status);
+        if(status & (1 << 3)){
+            I2C_ReadRegBlock(ADDRESS, ACC_DATA_REGS, 6, accVal);
+        } 
+        
+        x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
+
+        if(x > EXIT_TH && isCatched == 0) isCatched = 1;
+        if(x < EXIT_TH && isCatched == 1){
+            if(((UART0->S1) & UART0_S1_TDRE_MASK)){
+            UART0->D = 'a';
+
+            isCatched = isDetected = 0;
+            break;
+        }
+        }
+    }
 }
 
 #endif
+
+//}}
