@@ -11,9 +11,9 @@ void setup();
 int main(void){
     
     setup();
-    I2C_Init();
-    I2C_WriteReg(ADDRESS, HP_FILTER_CUTOFF, 0x01);
+    I2C_WriteReg(ADDRESS, HP_FILTER_CUTOFF, 0x03);
     I2C_WriteReg(ADDRESS, XYZ_DATA_CFG_REG, 0x10 );
+    I2C_WriteReg(ADDRESS, CTRL_REG1, 1 );
     UART0->C2 |= UART0_C2_TE_MASK;
 
     while(TRUE){
@@ -43,5 +43,10 @@ void setup(){
     UART0->BDL = UART0_BDH_SBR(13);
     // Even Partity, 8 bits, one stop bit
     // All registers are cleared :)
+
+    // I2C cofiguration (all in mighty library👼)
+    I2C_Init();
+
+    
     
 }
