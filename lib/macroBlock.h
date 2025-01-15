@@ -11,10 +11,11 @@
 #define HP_FILTER_CUTOFF 0x0f
 
 // tresholds
-#define ACTIVATION_TH -1.25
-#define UEXIT_TH -0.88
-#define DEXIT_TH -0.92
-#define ABSOLUTE_MAXIMUM_TH -0.6
+#define ACTIVATION_TH -0.15
+#define DEXIT_TH 0.03
+#define UEXIT_TH 0.10
+#define ABSOLUTE_MAXIMUM_TH 0.4
+#define ABSOLUTE_MINIMUM_TH -0.4
 
 // for future (i guess)
-#define UNDER_TEST 1
+#define UNDER_TEST 0
