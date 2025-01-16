@@ -50,7 +50,7 @@ float MMAGetAccXVal(){
 float MMAGetAccYVal(){
     uint8_t accVal[2];
     uint8_t status = 0;
-    float returnY = 0.0;
+    static float returnY = 0.0;
     I2C_ReadReg(ADDRESS, STATUS_REG, &status);
     if(status & (1 << YDR)){
         I2C_ReadRegBlock(ADDRESS, OUT_Y_REG, 2, accVal);
@@ -64,7 +64,7 @@ float MMAGetAccYVal(){
 float MMAGetAccZVal(){
     uint8_t accVal[2];
     uint8_t status = 0;
-    float returnZ = 0.0;
+    static float returnZ = 0.0;
     I2C_ReadReg(ADDRESS, STATUS_REG, &status);
     if(status & (1 << ZDR)){
         I2C_ReadRegBlock(ADDRESS, OUT_Z_REG, 2, accVal);
