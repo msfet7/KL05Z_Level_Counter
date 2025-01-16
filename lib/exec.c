@@ -3,18 +3,17 @@
 //int main(){
 
 // data
-uint8_t isClicked = 0;
-uint8_t status;
-uint8_t accVal[6];
+char data[45] = {0x20};
 float x = 0;
 float y = 0;
 float z = 0;
-char data[45] = {0x20};
 uint8_t length = 0;
 uint16_t endCycle = 0;
-
-int8_t isDetected = 0; //noninterrupt
+uint8_t status;
+uint8_t accVal[2];
 //uint8_t isDetected = 0;
+int8_t isDetected = 0; //noninterrupt
+uint8_t isClicked = 0;
 uint8_t isCatched = 0;
 uint8_t isReady = 0;
 
@@ -25,18 +24,12 @@ uint8_t isReady = 0;
 void execute(){
     if(!((PTB->PDIR)&(1 << 7))){
         isClicked = 1;
-        I2C_WriteReg(ADDRESS, CTRL_REG1, 1 );
+        MMAMode(1);
     }    
 
-    I2C_ReadReg(ADDRESS, STATUS_REG, &status);
-
-    if(status & (1 << 3)){
-        I2C_ReadRegBlock(ADDRESS, ACC_DATA_REGS, 6, accVal);
-    }
-
-    x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
-    y = (float)((int16_t)((accVal[2] << 8)|accVal[3]) >> 2)/4096;
-    z = (float)((int16_t)((accVal[4] << 8)|accVal[5]) >> 2)/4096;
+    x = MMAGetAccXVal();
+    y = MMAGetAccYVal();
+    z = MMAGetAccZVal();
     length = sprintf(data, "%d; %.2f; %.2f; %.2f\n", endCycle+1 ,x , y, z);
 
     if(isClicked){
@@ -55,7 +48,7 @@ void execute(){
         if(((UART0->S1) & UART0_S1_TDRE_MASK)){
             UART0->D = '\n';
         }
-        I2C_WriteReg(ADDRESS, CTRL_REG1, 0 );
+        MMAMode(0);
     }
 
 }
@@ -63,12 +56,8 @@ void execute(){
 // function declaration for use
 #else
 void execute(){
-    I2C_ReadReg(ADDRESS, STATUS_REG, &status);
-    if(status & (1 << 3)){
-        I2C_ReadRegBlock(ADDRESS, ACC_DATA_REGS, 6, accVal);
-    } 
-       
-    x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
+    x = MMAGetAccXVal();
+
     // interupt simulation
     if(x < ACTIVATION_TH && x > ACTIVATION_TH - 0.05 && isDetected == 0) isDetected = 1;
 
@@ -81,14 +70,8 @@ void execute(){
     }
 
     // after "interupt" execution
-    while(isDetected == 1){
-        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-        I2C_ReadReg(ADDRESS, STATUS_REG, &status);
-        if(status & (1 << 3)){
-            I2C_ReadRegBlock(ADDRESS, ACC_DATA_REGS, 6, accVal);
-        } 
-        
-        x = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
+    while(isDetected == 1){        
+        x = MMAGetAccXVal();
         
         /*
         length = sprintf(data, "%.2f\n", x);
@@ -98,6 +81,7 @@ void execute(){
             UART0->D = data[i];     
         }
         */
+        
         // explenation in documentation (there isn't any for now XD)
         if(x > DEXIT_TH && isReady == 0) isReady = 1;
         if(x > UEXIT_TH && isCatched == 0 && isReady == 1) isCatched = 1;
@@ -125,6 +109,33 @@ void execute(){
     }
 }
 
+//}}
 #endif
 
-//}}
+void setup(){
+    // Clocks configuration
+    SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
+    SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
+    SIM->SOPT2 |= SIM_SOPT2_UART0SRC(1);
+
+    // PortB configuration
+    PORTB->PCR[TX] = PORT_PCR_MUX(2);
+    PORTB->PCR[RX] = PORT_PCR_MUX(2);
+    PORTB->PCR[7] = PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
+    PTB->PDDR |= (0 << 7);
+
+    // UART configuration
+    UART0->C2 &= ~(UART0_C2_TE_MASK | UART0_C2_RE_MASK );	
+    //baudrate = clock/((OSR+1)*BR)
+    UART0->C4 = UART0_C4_OSR(13);
+    UART0->BDH = UART0_BDH_SBR(0);
+    UART0->BDL = UART0_BDH_SBR(13);
+    // Even Partity, 8 bits, one stop bit
+    // All registers are cleared :)
+
+    // I2C cofiguration (all in mighty library👼)
+    I2C_Init();
+
+    //MMA accelerometer configuration
+    MMABasicSetup();
+}
