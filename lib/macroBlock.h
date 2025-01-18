@@ -1,6 +1,8 @@
 // UART pins
 #define TX 1
 #define RX 2
+#define BTTN 7
+#define INT2 10
 
 
 // tresholds
