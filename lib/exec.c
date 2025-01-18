@@ -112,6 +112,8 @@ void execute(){
 //}}
 #endif
 
+
+
 void setup(){
     // Clocks configuration
     SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
@@ -138,4 +140,5 @@ void setup(){
 
     //MMA accelerometer configuration
     MMABasicSetup();
+    MMATHSetup();
 }
