@@ -46,7 +46,7 @@ void MMATHSetup(){
     // set the treshold value
     I2C_WriteReg(ADDRESS, FF_MT_THS_REG, ACTIVATION_TH_HEX);
     // set the debounce counter
-    I2C_WriteReg(ADDRESS, FF_MT_COUNT_REG, DEBOUNCE_COUNTER_HEX)
+    I2C_WriteReg(ADDRESS, FF_MT_COUNT_REG, DEBOUNCE_COUNTER_HEX);
 
     // enable interrupt
     I2C_WriteReg(ADDRESS, CTRL_REG4, (1 << INT_EN_FF_MT));
@@ -65,15 +65,21 @@ void MMAMode(uint8_t isActive){
 uint8_t MMAINTCheck(){
     uint8_t sourceINT = 0;
     uint8_t isMotionFall = 0;
+
+    // dual read was needed, because sometimes the actual value of the INT_SOURCE_REG wasn't correct 
     I2C_ReadReg(ADDRESS, INT_SOURCE_REG, &sourceINT);
+    I2C_ReadReg(ADDRESS, INT_SOURCE_REG, &sourceINT);
+    
     if((sourceINT & (1 << SRC_FF_MT)) == 0x04){
         I2C_ReadReg(ADDRESS, FF_MT_SRC_REG, &isMotionFall);
 
         if(((isMotionFall) & ((1 << XHE) | (1 << XHP))) == 0x03) return 2; // interrupt detected - negative g 
         else if(((isMotionFall) & ((1 << XHE) | (1 << XHP))) == 0x02) return 1; // interrupt detected - positive g 
         else return 0; // no interrupt detected
-    }
-    return 0; // no interrupt detected
+    } 
+    
+    // this is (theoretically) unattainable point of function
+    return 3 ; // no interrupt detected
 }
 
 float MMAGetAccXVal(){

@@ -1,6 +1,6 @@
 #include "boardControl.h"
 
-typedef struct {
+typedef struct{
     float x;
     float y;
     float z;
@@ -59,30 +59,20 @@ void execute(){
 #else
 void execute(){
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
+   
+    /*
+    length = sprintf(data, " %.2f    %d\n", axis.x, isDetected);
+    for(int i = 0; i < length; i++){
+        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
+        //DELAY(35);
+        UART0->D = data[i];     
+    } */
 
-    // interupt simulation
-    if(axis.x < ACTIVATION_TH && axis.x > ACTIVATION_TH - 0.05 && isDetected == 0) isDetected = 1;
 
-    //noninterrupt
-    if(isDetected == -2){
-        if(axis.x > 0) isDetected = 0;
-    }
-    if(isDetected == 2){
-        if(axis.x < 0) isDetected = 0;
-    }
-
-    // after "interupt" execution
+    // begin of fused state machine (more in the documentation)
     while(isDetected == 1){        
         axis.x = MMAGetAccXVal();
         
-        /*
-        length = sprintf(data, "%.2f\n", axis.x);
-        for(int i = 0; i < length; i++){
-            while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-            //DELAY(35);
-            UART0->D = data[i];     
-        }
-        */
         
         // explenation in documentation (there isn't any for now XD)
         if(axis.x > DEXIT_TH && isReady == 0) isReady = 1;
@@ -104,11 +94,12 @@ void execute(){
             break;
         }
         if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH){
-            isCatched = isReady = 0;
-            isDetected = axis.x < 0 ? -2 : 2; // only for noninterrupt code - interrupt version = bye bye
+            isCatched = isDetected = isReady = 0;
+            
             break;
         }
     }
+    
 }
 
 //}}
@@ -124,14 +115,14 @@ void setup(){
     SIM->SOPT2 |= SIM_SOPT2_UART0SRC(1);
 
     // PortA cnfiguration
-    PORTA->PCR[INT2] = PORT_PCR_MUX(1);
-    PORTA->PCR[INT2] = PORT_PCR_IRQC(10);
+    PORTA->PCR[INT2] |= PORT_PCR_MUX(1);
+    PORTA->PCR[INT2] |= PORT_PCR_IRQC(0xa);
     PTA->PDDR |= (0 << INT2);
 
     // PortB configuration
-    PORTB->PCR[TX] = PORT_PCR_MUX(2);
-    PORTB->PCR[RX] = PORT_PCR_MUX(2);
-    PORTB->PCR[BTTN] = PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
+    PORTB->PCR[TX] |= PORT_PCR_MUX(2);
+    PORTB->PCR[RX] |= PORT_PCR_MUX(2);
+    PORTB->PCR[BTTN] |= PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
     PTB->PDDR |= (0 << BTTN);
 
     // Port interrupt configuration
@@ -144,7 +135,7 @@ void setup(){
     UART0->C4 = UART0_C4_OSR(13);
     UART0->BDH = UART0_BDH_SBR(0);
     UART0->BDL = UART0_BDH_SBR(13); 
-    //baudrate = clock/((OSR+1)*BR)
+    //baudrate |= clock/((OSR+1)*BR)
     // Even Partity, 8 bits, one stop bit
     // All registers are cleared :)
 
@@ -154,4 +145,30 @@ void setup(){
     //MMA accelerometer configuration
     MMABasicSetup();
     MMATHSetup();
+}
+
+void intControl(){
+    uint32_t isfValue = PORTA->ISFR & (1 << INT2);
+    uint8_t gEvent = 0;
+
+    if(isfValue == (1 << INT2)){
+        gEvent = MMAINTCheck();
+
+        // if in the future the positive g will be use - switch rest
+        // otherwise switch will be replaced with single if
+        switch (gEvent)
+        {
+        case 1:
+            // pass for now
+            break;
+        case 2:
+            isDetected = 1;
+            break;        
+        case 0:            
+        case 3:
+            break;
+        }
+    }
+    PORTA->ISFR |= (1 << INT2);
+    NVIC_ClearPendingIRQ(PORTA_IRQn);
 }
