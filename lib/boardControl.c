@@ -1,25 +1,34 @@
 #include "boardControl.h"
 
+// accelerometer axis data
 typedef struct{
     float x;
     float y;
     float z;
 } accData;
 
+//states for fused state machine
+// more in documentation
+typedef enum{
+    NIHIL,      //nothing
+    ACTIVE,     //active state
+    DOWNTH,     //down treshold
+    UPTH,       //up treshold
+    STRPP       //stair++
+} state;
 
 //int main(){
 
 // data
 
-char data[45] = {0x20};
+static char data[45] = {0x20};
 static uint8_t length = 0;
 static uint16_t endCycle = 0;
 
-//volatile uint8_t isDetected = 0;
-volatile int8_t isDetected = 0; //noninterrupt
-static uint8_t isClicked = 0;
-static uint8_t isCatched = 0;
-static uint8_t isReady = 0;
+static uint8_t isDetected = 0;
+volatile uint8_t intDetected = 0;
+
+static int16_t stairsCounted = 0;
 
 //while(1){
 
@@ -59,45 +68,65 @@ void execute(){
 #else
 void execute(){
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
-   
-    /*
-    length = sprintf(data, " %.2f    %d\n", axis.x, isDetected);
-    for(int i = 0; i < length; i++){
-        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-        //DELAY(35);
-        UART0->D = data[i];     
-    } */
+    state currentState;
+    if(intDetected == 1){
+        uint8_t gEvent = 0;
+        gEvent = MMAINTCheck();
+
+        // if in the future the positive g will be use - switch rest
+        // otherwise switch will be replaced with single if
+        switch (gEvent)
+        {
+        case 1:
+            // pass for now
+            break;
+        case 2:
+            currentState = ACTIVE;
+            break;        
+        case 0:            
+        default:
+            break;
+        }
+        intDetected = 0;
+    }
 
 
     // begin of fused state machine (more in the documentation)
-    while(isDetected == 1){        
+    while(currentState != NIHIL){        
         axis.x = MMAGetAccXVal();
-        
-        
-        // explenation in documentation (there isn't any for now XD)
-        if(axis.x > DEXIT_TH && isReady == 0) isReady = 1;
-        if(axis.x > UEXIT_TH && isCatched == 0 && isReady == 1) isCatched = 1;
-        if(axis.x < UEXIT_TH && isCatched == 1){
-            while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-            UART0->D = 'a';
-            
 
-            isCatched = isDetected = isReady = 0;
+        // breakers
+        if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH) {
+            //isDetected = 0;
+            currentState = NIHIL;
+        }       
+
+        // state machine
+        switch (currentState){
+        case ACTIVE:
+            if(axis.x > DEXIT_TH) currentState = DOWNTH;
             break;
-            
-        }
-        if(axis.x < DEXIT_TH && isReady == 1){
-            while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-            UART0->D = 'b';
-            
-            isCatched = isDetected = isReady = 0;
+        case DOWNTH:
+            if(axis.x > UEXIT_TH) currentState = UPTH;
+            if(axis.x < DEXIT_TH){
+                //isDetected = 0;
+                currentState = NIHIL;
+            }
             break;
-        }
-        if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH){
-            isCatched = isDetected = isReady = 0;
-            
+        case UPTH:
+            if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
-        }
+        case STRPP:
+            while(!(UART0->S1 & UART0_S1_TDRE_MASK));   //for testing purposes
+            UART0->D = 'd';       
+
+            stairsCounted++;
+            //isDetected = 0;
+            currentState = NIHIL;
+            break;
+        default:
+            break;
+        }        
     }
     
 }
@@ -149,26 +178,23 @@ void setup(){
 
 void intControl(){
     uint32_t isfValue = PORTA->ISFR & (1 << INT2);
-    uint8_t gEvent = 0;
 
     if(isfValue == (1 << INT2)){
-        gEvent = MMAINTCheck();
-
-        // if in the future the positive g will be use - switch rest
-        // otherwise switch will be replaced with single if
-        switch (gEvent)
-        {
-        case 1:
-            // pass for now
-            break;
-        case 2:
-            isDetected = 1;
-            break;        
-        case 0:            
-        case 3:
-            break;
-        }
+        intDetected = 1;
     }
     PORTA->ISFR |= (1 << INT2);
     NVIC_ClearPendingIRQ(PORTA_IRQn);
 }
+
+
+// comment bin (called in polish "lista bubli")
+/*
+    length = sprintf(data, " %.2f    %d\n", axis.x, isDetected);
+    for(int i = 0; i < length; i++){
+        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
+        //DELAY(35);
+        UART0->D = data[i];     
+    } 
+    
+    
+*/
