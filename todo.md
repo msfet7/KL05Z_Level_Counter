@@ -6,6 +6,7 @@
 (A) Interupt based code (setup MMA, wstępna weryfikacja, setup portu, funkcja do interruptu, test ) {count:5/5} {cm:2025-01-19}
 (A) Czyszczenie nieinterruptowego kodu {cm:2025-01-20}
 (A) Test algorytmu w wersji interruptowej
+(A) Test algorytmu z licznikiem
 (A) Stworzenie i konfiguracja licznika
 (B) Biblioteka do makrosów {cm:2024-12-21}
 (B) Biblioteka do setupa {cm:2025-01-16}
@@ -17,6 +18,6 @@
 (E) Zabezpieczenia do bibliotek
 (E) Dostrojenie dla jak najlepszych rezultatów
 (E) Stworzenie struktur {cm:2025-01-18}
-(E) Stworzenie automatu stanów - enum, switch {count:0/2}
+(E) Stworzenie automatu stanów - enum, switch {count:2/2} {cm:2025-01-20}
 (F) Graficzne przedstawienie wyników (LCD)
 (F) Biblioteka do GUI - LCD
