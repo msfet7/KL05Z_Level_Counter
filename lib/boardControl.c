@@ -130,8 +130,12 @@ void execute(){
             if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
         case STRPP:
-            while(!(UART0->S1 & UART0_S1_TDRE_MASK));   //for testing purposes
-            UART0->D = 'd';       
+            length = sprintf(data, "%d \n", ticks);
+            for(int i = 0; i < length; i++){
+                while(!(UART0->S1 & UART0_S1_TDRE_MASK));
+                //DELAY(35);
+                UART0->D = data[i];     
+            }       
 
             stairsCounted++;
             //isDetected = 0;
