@@ -12,7 +12,11 @@
 #include "MMA.h"
 
 void PORTA_IRQHandler(void){
-    intControl();
+    MMAIntControl();
+}
+
+void PIT_IRQHandler(void){
+    PITIntControl();
 }
 
 

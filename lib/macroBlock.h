@@ -4,6 +4,8 @@
 #define BTTN 7
 #define INT2 10
 
+// values for timer
+#define FINAL_TICKS 50     // 1 step ~ 10ms, time window = 500ms, FINAL_TICKS = time window / 1 step
 
 // tresholds
 #define ACTIVATION_TH -0.15
