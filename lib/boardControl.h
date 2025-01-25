@@ -10,5 +10,8 @@ void execute();
 // function in setup
 void setup();
 
-// interrupt handler
-void intControl();
+// MMA interrupt handler
+void MMAIntControl();
+
+// PIT interrupt handler
+void PITIntControl();

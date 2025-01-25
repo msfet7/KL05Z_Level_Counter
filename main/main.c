@@ -1,3 +1,8 @@
+///////////////////////////////////////////////////////////
+// Project name: Floor counter
+// Author: Mateusz Szpot
+// Field of study: Electronics
+///////////////////////////////////////////////////////////
 #include <stdio.h>
 #include "MKL05Z4.h"
 #include "i2c.h"
@@ -7,7 +12,11 @@
 #include "MMA.h"
 
 void PORTA_IRQHandler(void){
-    intControl();
+    MMAIntControl();
+}
+
+void PIT_IRQHandler(void){
+    PITIntControl();
 }
 
 
