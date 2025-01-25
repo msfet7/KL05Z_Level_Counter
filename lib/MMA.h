@@ -1,3 +1,6 @@
+#ifndef MMA
+#define MMA
+
 #include "i2c.h"
 #include "macroBlock.h"
 
@@ -21,3 +24,5 @@ float MMAGetAccYVal();
 
 // retrieving z data from accelerometer
 float MMAGetAccZVal();
+
+#endif //MMA
