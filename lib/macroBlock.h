@@ -8,8 +8,16 @@
 #define DEBUG 6
 #define INT2 10
 
+//values for inputs
+#define BTTN_CLICK ((PTB->PDIR) & (1 << BTTN))
+#define DEBUG_CLICK ((PTB->PDIR) & (1 << DEBUG))
+
+// value for button debouncing
+#define BTTN_DEBOUNCE 100
+
 // values for timer
 #define FINAL_TICKS 50     // 1 step ~ 10ms, time window = 500ms, FINAL_TICKS = time window / 1 step
+#define SHORT_SEQ_DURATION 2
 
 // tresholds
 #define ACTIVATION_TH -0.15
