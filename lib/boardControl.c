@@ -23,8 +23,9 @@ typedef enum{
 static char data[45] = {0x20};
 static uint8_t isDebug = 0;
 static uint8_t length = 0;
-static uint16_t endCycle = 0;
 static uint8_t isClicked = 0;
+static uint16_t endCycle = 0;
+static uint16_t tempEndCycle = 0;
 
 // data for execute function
 static uint8_t isDetected = 0;
@@ -34,11 +35,12 @@ static uint16_t stairsCounted = 0;
 
 
 void debug(){
-    if(!((PTB->PDIR) & (1 << BTTN))){
-        isClicked = 1;
-        MMAMode(1);
-    }    
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
+
+    // Simple debouncing using endCycle variable
+    if(!BTTN_CLICK && endCycle < BTTN_DEBOUNCE) isClicked = 1;  
+    if(!BTTN_CLICK && endCycle > BTTN_DEBOUNCE) tempEndCycle = endCycle;                    // "latching" current ecndCycle value
+    if(((endCycle - tempEndCycle) > BTTN_DEBOUNCE) && tempEndCycle != 0) isClicked = 0;     // waiting for BTTN_DEBOUNCE cycles to end UART transmission
     
     length = sprintf(data, "%d; %.2f; %.2f; %.2f\n", endCycle+1 ,axis.x , axis.y, axis.z);
 
@@ -51,15 +53,14 @@ void debug(){
         DELAY(50)
         endCycle++;
     }
-    // 500 in 20s
-    if(endCycle == 1200) {
-        isClicked = 0;
-        endCycle = 0;
+    if(tempEndCycle != 0 && isClicked == 0){
         if(((UART0->S1) & UART0_S1_TDRE_MASK)){
             UART0->D = '\n';
         }
-        MMAMode(0);
+        tempEndCycle = 0;
+        endCycle = 0;
     }
+
     showMessage("Good luck with", "debugging bro!");
 }
 
@@ -95,8 +96,11 @@ void execute(){
     // begin of fused state machine (more in the documentation)
     while(currentState != NIHIL){        
         axis.x = MMAGetAccXVal();
-        
-      
+        axis.y = MMAGetAccYVal();
+        axis.z = MMAGetAccZVal();
+        float yzSumAbs = abs(axis.y+axis.z);
+
+        // PIT timer fuse
         if(ticks == 0) PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK;
         if(ticks == FINAL_TICKS){
             PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;
@@ -105,12 +109,17 @@ void execute(){
             break;
         }
         
-        // breakers
+        // X axis fuse
         if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH) {
-            //isDetected = 0;
             currentState = NIHIL;
             break;
-        }       
+        }   
+
+        // YZ abs value fuse for eliminating steps and body rotation triggers
+        if(yzSumAbs > YZ_MAXIMUM_TH){
+            currentState = NIHIL;
+            break;
+        }   
 
         // state machine
         switch (currentState){
@@ -128,9 +137,7 @@ void execute(){
             while(!(UART0->S1 & UART0_S1_TDRE_MASK));
         
             UART0->D = 'a';         
-
-            stairsCounted++;
-            //isDetected = 0;
+            if(ticks >= SHORT_SEQ_DURATION) stairsCounted++;
             currentState = NIHIL;
             break;
         default:
@@ -197,7 +204,7 @@ void setup(){
 }
 
 void debugControl(){
-    if(!((PTB->PDIR) & (1 << DEBUG))) isDebug = 1;
+    if(!DEBUG_CLICK) isDebug = 1;
     else isDebug = 0;
 }
 
