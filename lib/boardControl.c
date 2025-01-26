@@ -1,5 +1,6 @@
 #include "boardControl.h"
 
+
 // accelerometer axis data
 typedef struct{
     float x;
@@ -17,26 +18,22 @@ typedef enum{
     STRPP       //stair++
 } state;
 
-//int main(){
 
-// data
-
+// data for debug function
 static char data[45] = {0x20};
+static uint8_t isDebug = 0;
 static uint8_t length = 0;
 static uint16_t endCycle = 0;
+static uint8_t isClicked = 0;
 
+// data for execute function
 static uint8_t isDetected = 0;
 volatile uint8_t intDetected = 0;
-
 volatile uint16_t ticks = 0;
+static uint16_t stairsCounted = 0;
 
-static int16_t stairsCounted = 0;
 
-//while(1){
-
-//function declaration for test
-#if UNDER_TEST == 1
-void execute(){
+void debug(){
     if(!((PTB->PDIR) & (1 << BTTN))){
         isClicked = 1;
         MMAMode(1);
@@ -63,14 +60,12 @@ void execute(){
         }
         MMAMode(0);
     }
-
+    showMessage("Good luck with", "debugging bro!");
 }
 
-// function declaration for use
-#else
 void execute(){
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
-    state currentState;
+    state currentState = NIHIL;
     ticks = 0;
     if(intDetected == 1){
         uint8_t gEvent = 0;
@@ -93,23 +88,23 @@ void execute(){
             break;
         }
         intDetected = 0;
-    }else currentState = NIHIL;
+             
+    }
+    guiPrintStairs(stairsCounted);
 
-    
     // begin of fused state machine (more in the documentation)
     while(currentState != NIHIL){        
         axis.x = MMAGetAccXVal();
         
-        
-        // timer breaker
-        PIT->CHANNEL[0].TCTRL |= PIT_TCTRL_TEN_MASK;
+      
+        if(ticks == 0) PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK;
         if(ticks == FINAL_TICKS){
-            PIT->CHANNEL[0].TCTRL &= ~PIT_TCTRL_TEN_MASK;
+            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;
             ticks = 0;
-            currentState = NIHIL;
+            currentState = NIHIL; 
             break;
         }
-    
+        
         // breakers
         if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH) {
             //isDetected = 0;
@@ -130,12 +125,9 @@ void execute(){
             if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
         case STRPP:
-            length = sprintf(data, "%d \n", ticks);
-            for(int i = 0; i < length; i++){
-                while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-                //DELAY(35);
-                UART0->D = data[i];     
-            }       
+            while(!(UART0->S1 & UART0_S1_TDRE_MASK));
+        
+            UART0->D = 'a';         
 
             stairsCounted++;
             //isDetected = 0;
@@ -144,14 +136,9 @@ void execute(){
         default:
             break;
         }        
-    }
+    }   // end of "fused state machine"
     
 }
-
-//}}
-#endif
-
-
 
 void setup(){
     // Clocks configuration
@@ -169,6 +156,7 @@ void setup(){
     // PortB configuration
     PORTB->PCR[TX] |= PORT_PCR_MUX(2);
     PORTB->PCR[RX] |= PORT_PCR_MUX(2);
+    PORTB->PCR[DEBUG] |= PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
     PORTB->PCR[BTTN] |= PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
     PTB->PDDR |= (0 << BTTN);
 
@@ -180,11 +168,11 @@ void setup(){
     // PIT configuration
     const uint32_t pitTick = SystemCoreClock / 100;         // Time * Clock; Time = 10ms
     PIT->MCR &= ~PIT_MCR_MDIS_MASK;
-    PIT->CHANNEL[0].LDVAL = PIT_LDVAL_TSV(pitTick);
-    PIT->CHANNEL[0].TCTRL |= PIT_TCTRL_TIE_MASK;
+    PIT->CHANNEL[1].LDVAL = PIT_LDVAL_TSV(pitTick);
+    PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TIE_MASK ;
  
     // PIT interrupt  configuration
-    //NVIC_SetPriority(PIT_IRQn, 2);
+    NVIC_SetPriority(PIT_IRQn, 2);
     NVIC_ClearPendingIRQ(PIT_IRQn);
 	NVIC_EnableIRQ(PIT_IRQn);
     
@@ -203,6 +191,18 @@ void setup(){
     //MMA accelerometer configuration
     MMABasicSetup();
     MMATHSetup();
+
+    // GUI configuration
+    guiInit();
+}
+
+void debugControl(){
+    if(!((PTB->PDIR) & (1 << DEBUG))) isDebug = 1;
+    else isDebug = 0;
+}
+
+uint8_t debugState(){
+    return isDebug;
 }
 
 void MMAIntControl(){
@@ -217,7 +217,7 @@ void MMAIntControl(){
 
 void PITIntControl(){
     ticks++;
-    PIT->CHANNEL[0].TFLG = PIT_TFLG_TIF_MASK;
+    PIT->CHANNEL[1].TFLG = PIT_TFLG_TIF_MASK;
     NVIC_ClearPendingIRQ(PIT_IRQn);
 }
 
@@ -227,7 +227,6 @@ void PITIntControl(){
     length = sprintf(data, " %.2f    %d\n", axis.x, isDetected);
     for(int i = 0; i < length; i++){
         while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-        //DELAY(35);
         UART0->D = data[i];     
     } 
     

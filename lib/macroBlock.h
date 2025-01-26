@@ -1,7 +1,11 @@
+#ifndef MACROS
+#define MACROS
+
 // UART pins
 #define TX 1
 #define RX 2
 #define BTTN 7
+#define DEBUG 6
 #define INT2 10
 
 // values for timer
@@ -18,5 +22,6 @@
 // debounce -> 50/1.25 [ms]
 #define DEBOUNCE_COUNTER_HEX 0x12
 
-// for future (i guess)
-#define UNDER_TEST 0
+
+
+#endif //MACROS
