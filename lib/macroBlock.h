@@ -26,9 +26,10 @@
 #define UEXIT_TH 0.10
 #define ABSOLUTE_MAXIMUM_TH 0.45
 #define ABSOLUTE_MINIMUM_TH -0.45
+#define YZ_MAXIMUM_TH 0.43
 
 // debounce -> 50/1.25 [ms]
-#define DEBOUNCE_COUNTER_HEX 0x12
+#define DEBOUNCE_COUNTER_HEX 0x16
 
 
 
