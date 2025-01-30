@@ -1,14 +1,14 @@
-///////////////////////////////////////////////////////////
-// Project name: Levels counter
-// Author: Mateusz Szpot
-// Field of study: Electronics
-///////////////////////////////////////////////////////////
-#include <stdio.h>
-#include "MKL05Z4.h"
-#include "i2c.h"
-#include "frdm_bsp.h"
-#include "boardControl.h"
+///////////////////////////////////////////////////////////////
+/**
+*   @file main.c 
+*   @author Mateusz Szpot
+*   @date December 2024, January 2025
+*   @brief Level counter using accelerometer
+*/
+///////////////////////////////////////////////////////////////
 
+#include "MMA.h"
+#include "boardControl.h"
 
 
 void PORTA_IRQHandler(void){
@@ -23,18 +23,18 @@ void PIT_IRQHandler(void){
 
 int main(void){
     
+    // setup
     setup();
     debugControl();
     MMAMode(1);    
-    UART0->C2 |= UART0_C2_TE_MASK;
 
+    // main loop
     while(TRUE){
         if(debugState() == 0){
             execute();
         }else{
             debug();
-        }
-        
+        }   
     }
     
 }

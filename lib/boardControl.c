@@ -1,5 +1,12 @@
-#include "boardControl.h"
+/** 
+* @file boardControl.c
+* @author Mateusz Szpot
+* @date December 2024, January 2025
+*
+* @brief File contains functions for setup, main loop and interrupt handlers
+*/
 
+#include "boardControl.h"
 
 // accelerometer axis data
 typedef struct{
@@ -28,7 +35,6 @@ static uint16_t endCycle = 0;
 static uint16_t tempEndCycle = 0;
 
 // data for execute function
-static uint8_t isDetected = 0;
 volatile uint8_t intDetected = 0;
 volatile uint16_t ticks = 0;
 static uint16_t stairsCounted = 0;
@@ -38,27 +44,33 @@ void debug(){
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
 
     // Simple debouncing using endCycle variable
-    if(!BTTN_CLICK && endCycle < BTTN_DEBOUNCE) isClicked = 1;  
-    if(!BTTN_CLICK && endCycle > BTTN_DEBOUNCE) tempEndCycle = endCycle;                    // "latching" current ecndCycle value
+    if(!BTTN_CLICK && endCycle < BTTN_DEBOUNCE){
+        isClicked = 1;  
+        UART0->C2 |= UART0_C2_TE_MASK;                                                      //UART transmiter on
+    }
+    if(!BTTN_CLICK && endCycle > BTTN_DEBOUNCE) tempEndCycle = endCycle;                    // "latching" current endCycle value
     if(((endCycle - tempEndCycle) > BTTN_DEBOUNCE) && tempEndCycle != 0) isClicked = 0;     // waiting for BTTN_DEBOUNCE cycles to end UART transmission
     
+    //      #    X      Y    Z
+    // ex. 20; 1.35, -0.02, 0.3
     length = sprintf(data, "%d; %.2f; %.2f; %.2f\n", endCycle+1 ,axis.x , axis.y, axis.z);
 
     if(isClicked){
-        for(int i = 0; i < length; i++){
+        for(int i = 0; i < length; i++){                // sample transmission
             while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-            //DELAY(35);
             UART0->D = data[i];     
         }
-        DELAY(50)
+        DELAY(20)
         endCycle++;
     }
-    if(tempEndCycle != 0 && isClicked == 0){
+
+    if(tempEndCycle != 0 && isClicked == 0){            // terminating condition
         if(((UART0->S1) & UART0_S1_TDRE_MASK)){
             UART0->D = '\n';
         }
         tempEndCycle = 0;
         endCycle = 0;
+        UART0->C2 &= ~UART0_C2_TE_MASK;                 // UART transmiter off
     }
 
     showMessage("Good luck with", "debugging bro!");
@@ -68,6 +80,8 @@ void execute(){
     accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
     state currentState = NIHIL;
     ticks = 0;
+
+    // interrupt checker
     if(intDetected == 1){
         uint8_t gEvent = 0;
         gEvent = MMAINTCheck();
@@ -98,7 +112,7 @@ void execute(){
         axis.x = MMAGetAccXVal();
         axis.y = MMAGetAccYVal();
         axis.z = MMAGetAccZVal();
-        float yzSumAbs = abs(axis.y+axis.z);
+        float yzSumAbs = fabs(axis.y + axis.z);
 
         // PIT timer fuse
         if(ticks == 0) PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK;
@@ -133,10 +147,7 @@ void execute(){
         case UPTH:
             if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
-        case STRPP:
-            while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-        
-            UART0->D = 'a';         
+        case STRPP:   
             if(ticks >= SHORT_SEQ_DURATION) stairsCounted++;
             currentState = NIHIL;
             break;
@@ -167,7 +178,7 @@ void setup(){
     PORTB->PCR[BTTN] |= PORT_PCR_MUX(1) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
     PTB->PDDR |= (0 << BTTN);
 
-    // Port interrupt configuration
+    // PortA interrupt configuration
     NVIC_SetPriority(PORTA_IRQn, 3);
     NVIC_ClearPendingIRQ(PORTA_IRQn);
     NVIC_EnableIRQ(PORTA_IRQn);
@@ -204,7 +215,7 @@ void setup(){
 }
 
 void debugControl(){
-    if(!DEBUG_CLICK) isDebug = 1;
+    if(!DEBUG_PIN_STATE) isDebug = 1;
     else isDebug = 0;
 }
 
@@ -218,6 +229,7 @@ void MMAIntControl(){
     if(isfValue == (1 << INT2)){
         intDetected = 1;
     }
+    // interrupt flag deleting
     PORTA->ISFR |= (1 << INT2);
     NVIC_ClearPendingIRQ(PORTA_IRQn);
 }
@@ -227,15 +239,3 @@ void PITIntControl(){
     PIT->CHANNEL[1].TFLG = PIT_TFLG_TIF_MASK;
     NVIC_ClearPendingIRQ(PIT_IRQn);
 }
-
-
-// comment bin (called in polish "lista bubli")
-/*
-    length = sprintf(data, " %.2f    %d\n", axis.x, isDetected);
-    for(int i = 0; i < length; i++){
-        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
-        UART0->D = data[i];     
-    } 
-    
-    
-*/

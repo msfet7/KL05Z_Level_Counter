@@ -1,3 +1,11 @@
+/** 
+* @file gui.c
+* @author Mateusz Szpot
+* @date December 2024, January 2025
+*
+* @brief File contains functions for LCD handling
+*/
+
 #include "gui.h"
 
 #define STAIRS_TO_LVLS_DIV 12   // average number of stairs for one level

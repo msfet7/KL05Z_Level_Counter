@@ -1,5 +1,12 @@
-#include "MMA.h"
+/** 
+* @file MMA.c
+* @author Mateusz Szpot
+* @date December 2024, January 2025
+*
+* @brief File contains functions for MMA accelerometer (setup, interrupt, axis data acquisition)
+*/
 
+#include "MMA.h"
 
 // accelerometer registers
 #define ADDRESS 0x1d
@@ -29,11 +36,13 @@
 #define INT_CFG_FF_MT 2
 
 void MMABasicSetup(){
-    // filter cutoff frequency set 
+    // filter cutoff frequency set - 2Hz
     I2C_WriteReg(ADDRESS, HP_FILTER_CUTOFF, 0x03);
 
     // filter turn on
     I2C_WriteReg(ADDRESS, XYZ_DATA_CFG_REG, 0x10 );
+
+    // every mod is default 
 }
 
 void MMATHSetup(){
@@ -84,15 +93,15 @@ uint8_t MMAINTCheck(){
 float MMAGetAccXVal(){
     uint8_t accVal[2];
     uint8_t status = 0;
-    
     static float returnX = 0.0;
+
     I2C_ReadReg(ADDRESS, STATUS_REG, &status);
+
     if(status & (1 << XDR)){
         I2C_ReadRegBlock(ADDRESS, OUT_X_REG, 2, accVal);
         returnX = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
     } 
        
-
     return returnX;
 }
 
@@ -100,13 +109,14 @@ float MMAGetAccYVal(){
     uint8_t accVal[2];
     uint8_t status = 0;
     static float returnY = 0.0;
+
     I2C_ReadReg(ADDRESS, STATUS_REG, &status);
+
     if(status & (1 << YDR)){
         I2C_ReadRegBlock(ADDRESS, OUT_Y_REG, 2, accVal);
         returnY = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
     } 
        
-
     return returnY;
 }
 
@@ -114,13 +124,14 @@ float MMAGetAccZVal(){
     uint8_t accVal[2];
     uint8_t status = 0;
     static float returnZ = 0.0;
+
     I2C_ReadReg(ADDRESS, STATUS_REG, &status);
+
     if(status & (1 << ZDR)){
         I2C_ReadRegBlock(ADDRESS, OUT_Z_REG, 2, accVal);
         returnZ = (float)((int16_t)((accVal[0] << 8)|accVal[1]) >> 2)/4096;
     } 
        
-
     return returnZ;
 }
 
