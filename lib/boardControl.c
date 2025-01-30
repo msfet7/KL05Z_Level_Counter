@@ -77,7 +77,7 @@ void debug(){
 }
 
 void execute(){
-    accData axis = {MMAGetAccXVal(), MMAGetAccYVal(), MMAGetAccZVal()};
+    accData axis = {0, 0, 0};
     state currentState = NIHIL;
     ticks = 0;
 
@@ -148,7 +148,7 @@ void execute(){
             if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
         case STRPP:   
-            if(ticks >= SHORT_SEQ_DURATION) stairsCounted++;
+            if(ticks > SHORT_SEQ_DURATION) stairsCounted++;
             currentState = NIHIL;
             break;
         default:

@@ -37,7 +37,7 @@
 #define YZ_MAXIMUM_TH 0.43
 
 // debounce -> 50/1.25 [ms]
-#define DEBOUNCE_COUNTER_HEX 0x16
+#define DEBOUNCE_COUNTER_HEX 0x15
 
 
 
