@@ -18,7 +18,7 @@
 (D) Ustawienie tresholdów {cm:2025-01-16}
 (D) Ustawienie licznika {cm:2025-01-23}
 (E) Zabezpieczenia do bibliotek {cm:2025-01-25}
-(E) Dostrojenie dla jak najlepszych rezultatów {count:1/2}
+(E) Dostrojenie dla jak najlepszych rezultatów {count:2/2} {cm:2025-01-30}
 (E) Eliminacja zliczania samych kroków {cm:2025-01-30}
 (E) Eliminacja krótkich sekwencji {cm:2025-01-30}
 (E) Czyszczenie plików {cm:2025-01-30}
