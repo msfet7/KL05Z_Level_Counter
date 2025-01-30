@@ -1,3 +1,11 @@
+/** 
+* @file macroBlock.h
+* @author Mateusz Szpot
+* @date December 2024, January 2025
+*
+* @brief File contains usefull macros
+*/
+
 #ifndef MACROS
 #define MACROS
 
@@ -10,7 +18,7 @@
 
 //values for inputs
 #define BTTN_CLICK ((PTB->PDIR) & (1 << BTTN))
-#define DEBUG_CLICK ((PTB->PDIR) & (1 << DEBUG))
+#define DEBUG_PIN_STATE ((PTB->PDIR) & (1 << DEBUG))
 
 // value for button debouncing
 #define BTTN_DEBOUNCE 100

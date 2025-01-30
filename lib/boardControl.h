@@ -1,31 +1,55 @@
+/** 
+* @file boardControl.h
+* @author Mateusz Szpot
+* @date December 2024, January 2025
+*
+* @brief File contains functions for setup, main loop and interrupt handlers
+*/
+
 #ifndef BOARD_CONTROL
 #define BOARD_CONTROL
 
 #include <stdio.h>
+#include <math.h>
 #include "MKL05Z4.h"
 #include "macroBlock.h"
 #include "MMA.h"
 #include "gui.h"
 
-// function with debug features - sending xyz data by UART
+/**
+ * @brief Function with debug features - sending xyz data by UART
+ */
 void debug();
 
-// function in loop
+/**
+ * @brief Function detecting stairs
+ */
 void execute();
 
-// function in setup
+/**
+ * @brief Setup function
+ */
 void setup();
 
-// changing which function is executing (debug or execute)
+/**
+ * @brief Function for setting debug or execute mod
+ */
 void debugControl();
 
-// function returning value of a private variable isDebug
+/**
+ * @brief Function returning value of a private variable isDebug (isDebug getter)
+ * @return isDebug variable
+ */
 uint8_t debugState();
 
-// MMA interrupt handler
+/**
+ * @brief MMA accelerometer interrupt handler
+ */
 void MMAIntControl();
 
-// PIT interrupt handler
+/**
+ * @brief PIT Timer interrupt handler
+ */
 void PITIntControl();
 
 #endif //BOARD_CONTROL
