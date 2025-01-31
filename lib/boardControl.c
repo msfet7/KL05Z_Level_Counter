@@ -65,9 +65,9 @@ void debug(){
     }
 
     if(tempEndCycle != 0 && isClicked == 0){            // terminating condition
-        if(((UART0->S1) & UART0_S1_TDRE_MASK)){
-            UART0->D = '\n';
-        }
+        while(!(UART0->S1 & UART0_S1_TDRE_MASK));
+        UART0->D = '\n';
+    
         tempEndCycle = 0;
         endCycle = 0;
         UART0->C2 &= ~UART0_C2_TE_MASK;                 // UART transmiter off
@@ -115,9 +115,9 @@ void execute(){
         float yzSumAbs = fabs(axis.y + axis.z);
 
         // PIT timer fuse
-        if(ticks == 0) PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK;
+        if(ticks == 0) PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK; //turn on the timer
         if(ticks == FINAL_TICKS){
-            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;
+            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;       //turn off the timer
             ticks = 0;
             currentState = NIHIL; 
             break;
@@ -126,12 +126,14 @@ void execute(){
         // X axis fuse
         if(axis.x > ABSOLUTE_MAXIMUM_TH || axis.x < ABSOLUTE_MINIMUM_TH) {
             currentState = NIHIL;
+            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;       //turn off the timer
             break;
         }   
 
         // YZ abs value fuse for eliminating steps and body rotation triggers
         if(yzSumAbs > YZ_MAXIMUM_TH){
             currentState = NIHIL;
+            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;       //turn off the timer
             break;
         }   
 
@@ -142,13 +144,17 @@ void execute(){
             break;
         case DOWNTH:
             if(axis.x > UEXIT_TH) currentState = UPTH;
-            if(axis.x < DEXIT_TH) currentState = NIHIL;
+            if(axis.x < DEXIT_TH) {
+                PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;       //turn off the timer
+                currentState = NIHIL;
+            }
             break;
         case UPTH:
             if(axis.x < UEXIT_TH) currentState = STRPP;
             break;
         case STRPP:   
             if(ticks > SHORT_SEQ_DURATION) stairsCounted++;
+            PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;       //turn off the timer
             currentState = NIHIL;
             break;
         default:
